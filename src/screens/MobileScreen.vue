@@ -232,14 +232,14 @@ watch(currentStep, (step) => {
       </div>
 
       <!-- 上传步骤 -->
-      <div v-if="currentStep === 'upload'" class="card-song p-6">
+      <div v-if="currentStep === 'upload'">
         <!-- 错误提示 -->
         <div v-if="uploadError" class="mb-4 p-3 rounded-lg bg-song-accent/20 text-song-accent text-sm">
           {{ uploadError }}
         </div>
 
         <label
-          class="upload-area cursor-pointer"
+          class="upload-area cursor-pointer block"
           @dragover.prevent
           @dragenter.prevent
           @drop.prevent="(e: DragEvent) => handleImageUpload(e.dataTransfer?.files?.[0])"
