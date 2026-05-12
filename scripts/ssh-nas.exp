@@ -1,0 +1,32 @@
+#!/usr/bin/expect -f
+
+set timeout 60
+set NAS_IP "100.84.59.9"
+set NAS_USER "admin"
+set NAS_PASS "!W0nerfu1life#@"
+set DEPLOY_PATH "/volume1/docker/songyun"
+
+# 连接 NAS
+spawn ssh -o StrictHostKeyChecking=no $NAS_USER@$NAS_IP
+expect {
+    "password:" {
+        send "$NAS_PASS\r"
+    }
+    timeout {
+        puts "SSH 连接超时"
+        exit 1
+    }
+}
+
+expect "$NAS_USER@*"
+
+# 创建部署目录
+send "mkdir -p $DEPLOY_PATH\r"
+expect "$NAS_USER@*"
+
+# 检查 Docker
+send "docker --version\r"
+expect "$NAS_USER@*"
+
+puts "\n连接成功，请手动上传文件或继续部署\n"
+interact

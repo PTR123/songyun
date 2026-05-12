@@ -1,0 +1,163 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+set NAS_IP "100.84.59.9"
+set NAS_PORT "2222"
+set NAS_USER "admin"
+set NAS_PASS "!W0nerfu1life#@"
+set DEPLOY_PATH "/volume2/docker/songyun"
+set LOCAL_PATH "/Users/steveyu/im2im"
+
+puts "🚀 开始部署到 NAS..."
+
+# ===== 创建目录 =====
+puts "📦 创建部署目录..."
+
+spawn ssh -o StrictHostKeyChecking=no -p $NAS_PORT $NAS_USER@$NAS_IP
+expect "password:"
+send "$NAS_PASS\r"
+expect "$NAS_USER@*"
+
+send "mkdir -p $DEPLOY_PATH\r"
+expect "$NAS_USER@*"
+
+send "mkdir -p $DEPLOY_PATH/nginx\r"
+expect "$NAS_USER@*"
+
+send "mkdir -p $DEPLOY_PATH/backend\r"
+expect "$NAS_USER@*"
+
+send "ls -la $DEPLOY_PATH\r"
+expect "$NAS_USER@*"
+
+send "exit\r"
+expect eof
+
+puts "✅ 目录创建完成"
+
+# ===== 上传文件 =====
+puts "📤 上传文件..."
+
+spawn sftp -o StrictHostKeyChecking=no -P $NAS_PORT $NAS_USER@$NAS_IP
+expect "password:"
+send "$NAS_PASS\r"
+expect "sftp>"
+
+puts "  上传配置文件..."
+send "put $LOCAL_PATH/docker-compose-nas.yml $DEPLOY_PATH/docker-compose.yml\r"
+expect "sftp>"
+
+send "put $LOCAL_PATH/.env $DEPLOY_PATH/.env\r"
+expect "sftp>"
+
+send "put $LOCAL_PATH/nginx/nginx.conf $DEPLOY_PATH/nginx/nginx.conf\r"
+expect "sftp>"
+
+send "put $LOCAL_PATH/backend/package.json $DEPLOY_PATH/backend/package.json\r"
+expect "sftp>"
+
+send "put $LOCAL_PATH/backend/Dockerfile $DEPLOY_PATH/backend/Dockerfile\r"
+expect "sftp>"
+
+puts "  上传前端..."
+send "mkdir $DEPLOY_PATH/dist\r"
+expect "sftp>"
+send "mkdir $DEPLOY_PATH/dist/assets\r"
+expect "sftp>"
+send "mkdir $DEPLOY_PATH/dist/images\r"
+expect "sftp>"
+send "mkdir $DEPLOY_PATH/dist/images/styles\r"
+expect "sftp>"
+send "mkdir $DEPLOY_PATH/dist/fonts\r"
+expect "sftp>"
+
+send "put $LOCAL_PATH/dist/index.html $DEPLOY_PATH/dist/index.html\r"
+expect "sftp>"
+send "put $LOCAL_PATH/dist/favicon.svg $DEPLOY_PATH/dist/favicon.svg\r"
+expect "sftp>"
+
+# 上传 assets
+send "mput $LOCAL_PATH/dist/assets/*.css $DEPLOY_PATH/dist/assets/\r"
+expect "sftp>"
+send "mput $LOCAL_PATH/dist/assets/*.js $DEPLOY_PATH/dist/assets/\r"
+expect "sftp>"
+
+# 上传 images
+send "mput $LOCAL_PATH/dist/images/styles/*.jpg $DEPLOY_PATH/dist/images/styles/\r"
+expect "sftp>"
+
+# 上传 fonts（如果有）
+send "mput $LOCAL_PATH/dist/fonts/*.woff2 $DEPLOY_PATH/dist/fonts/\r"
+expect "sftp>"
+
+puts "  上传后端..."
+send "mkdir $DEPLOY_PATH/backend/dist\r"
+expect "sftp>"
+send "mkdir $DEPLOY_PATH/backend/dist/lib\r"
+expect "sftp>"
+send "mkdir $DEPLOY_PATH/backend/dist/lib/ai\r"
+expect "sftp>"
+send "mkdir $DEPLOY_PATH/backend/dist/constants\r"
+expect "sftp>"
+
+send "mput $LOCAL_PATH/backend/dist/*.js $DEPLOY_PATH/backend/dist/\r"
+expect "sftp>"
+send "mput $LOCAL_PATH/backend/dist/lib/*.js $DEPLOY_PATH/backend/dist/lib/\r"
+expect "sftp>"
+send "mput $LOCAL_PATH/backend/dist/lib/ai/*.js $DEPLOY_PATH/backend/dist/lib/ai/\r"
+expect "sftp>"
+send "mput $LOCAL_PATH/backend/dist/constants/*.js $DEPLOY_PATH/backend/dist/constants/\r"
+expect "sftp>"
+
+send "exit\r"
+expect eof
+
+puts "✅ 文件上传完成"
+
+# ===== 启动 Docker =====
+puts "🚀 启动 Docker 服务..."
+
+spawn ssh -o StrictHostKeyChecking=no -p $NAS_PORT $NAS_USER@$NAS_IP
+expect "password:"
+send "$NAS_PASS\r"
+expect "$NAS_USER@*"
+
+send "cd $DEPLOY_PATH\r"
+expect "$NAS_USER@*"
+
+puts "  检查文件..."
+send "ls -la\r"
+expect "$NAS_USER@*"
+
+puts "  停止旧服务..."
+send "docker compose down 2>/dev/null; docker-compose down 2>/dev/null\r"
+expect "$NAS_USER@*"
+
+puts "  构建镜像..."
+send "docker compose build 2>&1\r"
+expect {
+    -re "Successfully|done" { puts "  ✓ 构建成功" }
+    "$NAS_USER@*" { }
+    timeout { puts "  ⏳ 构建中..." }
+}
+
+puts "  启动服务..."
+send "docker compose up -d\r"
+expect {
+    "done" { puts "  ✓ 启动成功" }
+    "$NAS_USER@*" { }
+    timeout { puts "  ⏳ 启动中..." }
+}
+
+puts "  检查状态..."
+send "docker compose ps\r"
+expect "$NAS_USER@*"
+
+send "exit\r"
+expect eof
+
+puts "\n🎉 部署完成!"
+puts "\n📍 访问地址:"
+puts "   H5 前端: http://$NAS_IP:3000"
+puts "   后端 API: http://$NAS_IP:3001/api"
+puts "\n📱 扫码链接: http://$NAS_IP:3000"

@@ -1,0 +1,45 @@
+#!/usr/bin/expect -f
+
+set timeout 180
+set NAS_IP "100.84.59.9"
+set NAS_PORT "2222"
+set NAS_USER "admin"
+set NAS_PASS "!W0nerfu1life#@"
+set DEPLOY_PATH "/volume1/docker/songyun"
+set LOCAL_PATH "/Users/steveyu/im2im"
+
+puts "🚀 开始部署到 NAS..."
+
+# 先检查可用的目录
+puts "🔍 检查 NAS 目录..."
+
+spawn ssh -o StrictHostKeyChecking=no -p $NAS_PORT $NAS_USER@$NAS_IP
+expect "password:"
+send "$NAS_PASS\r"
+expect "$NAS_USER@*"
+
+send "ls /volume1/\r"
+expect "$NAS_USER@*"
+
+send "whoami\r"
+expect "$NAS_USER@*"
+
+send "id\r"
+expect "$NAS_USER@*"
+
+send "sudo mkdir -p $DEPLOY_PATH\r"
+expect {
+    "password" {
+        send "$NAS_PASS\r"
+        expect "$NAS_USER@*"
+    }
+    "$NAS_USER@*" { }
+}
+
+send "ls $DEPLOY_PATH\r"
+expect "$NAS_USER@*"
+
+send "exit\r"
+expect eof
+
+puts "\n--- 请确认可用目录后继续 ---"

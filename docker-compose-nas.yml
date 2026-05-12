@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: songyun-api
+    restart: always
+    environment:
+      TONGYI_API_KEY: ${TONGYI_API_KEY}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      PORT: 6000
+    ports:
+      - "6000:6000"
+
+  frontend:
+    image: nginx:alpine
+    container_name: songyun-web
+    restart: always
+    volumes:
+      - ./dist:/usr/share/nginx/html:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+networks:
+  default:
+    name: songyun-network

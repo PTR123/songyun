@@ -1,0 +1,7 @@
+node_modules
+.git
+test-output
+backend/node_modules
+scripts/*.exp
+*.tar.gz
+backend-deploy.tar.gz

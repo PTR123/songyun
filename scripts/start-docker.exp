@@ -1,0 +1,74 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+set NAS_IP "100.84.59.9"
+set NAS_PORT "2222"
+set NAS_USER "admin"
+set NAS_PASS "!W0nerfu1life#@"
+set DEPLOY_PATH "/volume2/docker/songyun"
+
+puts "🚀 启动 Docker 服务（使用 sudo）..."
+
+spawn ssh -o StrictHostKeyChecking=no -p $NAS_PORT $NAS_USER@$NAS_IP
+expect "password:"
+send "$NAS_PASS\r"
+expect "$NAS_USER@*"
+
+send "cd $DEPLOY_PATH\r"
+expect "$NAS_USER@*"
+
+puts "  停止旧服务..."
+send "sudo docker compose down 2>/dev/null\r"
+expect {
+    "Password:" {
+        send "$NAS_PASS\r"
+        expect "$NAS_USER@*"
+    }
+    "$NAS_USER@*" { }
+}
+
+puts "  构建镜像..."
+send "sudo docker compose build\r"
+expect {
+    "Password:" {
+        send "$NAS_PASS\r"
+        expect "$NAS_USER@*"
+    }
+    -re "Successfully|Step" { }
+    "$NAS_USER@*" { }
+    timeout { puts "  构建进行中..." }
+}
+
+# 等待构建
+sleep 60
+expect "$NAS_USER@*"
+
+puts "  启动服务..."
+send "sudo docker compose up -d\r"
+expect {
+    "Password:" {
+        send "$NAS_PASS\r"
+        expect "$NAS_USER@*"
+    }
+    "done" { puts "  ✓" }
+    "$NAS_USER@*" { }
+    timeout { }
+}
+
+sleep 10
+expect "$NAS_USER@*"
+
+puts "  检查状态..."
+send "sudo docker compose ps\r"
+expect "$NAS_USER@*"
+
+send "sudo docker compose logs --tail=20\r"
+expect "$NAS_USER@*"
+
+send "exit\r"
+expect eof
+
+puts "\n🎉 部署完成!"
+puts "\n📍 访问地址:"
+puts "   H5 前端: http://$NAS_IP:3000"
+puts "   后端 API: http://$NAS_IP:3001/api"

@@ -1,0 +1,132 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+set NAS_IP "100.84.59.9"
+set NAS_PORT "2222"
+set NAS_USER "admin"
+set NAS_PASS "!W0nerfu1life#@"
+set DEPLOY_PATH "/volume2/docker/songyun"
+set LOCAL_PATH "/Users/steveyu/im2im"
+
+puts "🚀 开始部署到 NAS..."
+
+# ===== 打包本地文件 =====
+puts "📦 打包部署文件..."
+
+# 使用 tar 打包（排除 node_modules 等）
+spawn tar -czvf /tmp/songyun-deploy.tar.gz \
+    --exclude node_modules \
+    --exclude .git \
+    --exclude test-output \
+    --exclude src \
+    --exclude backend/src \
+    --exclude backend/node_modules \
+    --exclude "*.log" \
+    -C $LOCAL_PATH \
+    docker-compose-nas.yml \
+    .env \
+    nginx \
+    dist \
+    backend/dist \
+    backend/package.json \
+    backend/Dockerfile
+
+expect eof
+puts "✅ 打包完成"
+
+# ===== 创建目录 =====
+puts "📦 创建 NAS 目录..."
+
+spawn ssh -o StrictHostKeyChecking=no -p $NAS_PORT $NAS_USER@$NAS_IP
+expect "password:"
+send "$NAS_PASS\r"
+expect "$NAS_USER@*"
+
+send "mkdir -p $DEPLOY_PATH\r"
+expect "$NAS_USER@*"
+
+send "exit\r"
+expect eof
+
+puts "✅ 目录创建完成"
+
+# ===== 上传 tar 包 =====
+puts "📤 上传部署包..."
+
+# 使用 dd 通过 SSH 上传
+spawn bash -c "cat /tmp/songyun-deploy.tar.gz | ssh -o StrictHostKeyChecking=no -p $NAS_PORT $NAS_USER@$NAS_IP 'cat > $DEPLOY_PATH/deploy.tar.gz'"
+expect "password:"
+send "$NAS_PASS\r"
+expect eof
+
+puts "✅ 上传完成"
+
+# ===== 解压并启动 =====
+puts "🚀 解压并启动服务..."
+
+spawn ssh -o StrictHostKeyChecking=no -p $NAS_PORT $NAS_USER@$NAS_IP
+expect "password:"
+send "$NAS_PASS\r"
+expect "$NAS_USER@*"
+
+send "cd $DEPLOY_PATH\r"
+expect "$NAS_USER@*"
+
+puts "  解压文件..."
+send "tar -xzvf deploy.tar.gz\r"
+expect "$NAS_USER@*"
+
+# 重命名 docker-compose 文件
+send "mv docker-compose-nas.yml docker-compose.yml 2>/dev/null\r"
+expect "$NAS_USER@*"
+
+puts "  检查文件..."
+send "ls -la\r"
+expect "$NAS_USER@*"
+
+puts "  停止旧服务..."
+send "docker compose down 2>/dev/null\r"
+expect "$NAS_USER@*"
+
+puts "  构建镜像..."
+send "docker compose build\r"
+expect {
+    -re "Successfully|Step" { }
+    "$NAS_USER@*" { }
+    timeout { }
+}
+
+# 等待构建完成
+sleep 30
+expect "$NAS_USER@*"
+
+puts "  启动服务..."
+send "docker compose up -d\r"
+expect {
+    "done" { }
+    "$NAS_USER@*" { }
+    timeout { }
+}
+
+sleep 5
+expect "$NAS_USER@*"
+
+puts "  检查状态..."
+send "docker compose ps\r"
+expect "$NAS_USER@*"
+
+send "docker compose logs --tail=20\r"
+expect "$NAS_USER@*"
+
+send "exit\r"
+expect eof
+
+puts "\n🎉 部署完成!"
+puts "\n📍 访问地址:"
+puts "   H5 前端: http://$NAS_IP:3000"
+puts "   后端 API: http://$NAS_IP:3001/api"
+puts "\n📱 扫码链接: http://$NAS_IP:3000"
+
+# 清理本地临时文件
+spawn rm /tmp/songyun-deploy.tar.gz
+expect eof

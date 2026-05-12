@@ -1,0 +1,143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 宋韵主题基础样式 */
+@layer base {
+  body {
+    background: linear-gradient(180deg, #0a1f2a 0%, #152535 50%, #1f3040 100%);
+    min-height: 100vh;
+  }
+
+  /* 自定义滚动条 */
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #152535;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #3d5a6a;
+    border-radius: 2px;
+  }
+}
+
+@layer components {
+  /* 宋韵按钮 */
+  .btn-song {
+    @apply px-6 py-3 rounded-lg font-song text-song-text-primary transition-all duration-300;
+    background: linear-gradient(135deg, #1f3040 0%, #2d5a6a 100%);
+    border: 1px solid #3d5a6a;
+  }
+
+  .btn-song:hover {
+    background: linear-gradient(135deg, #2d5a6a 0%, #3d5a6a 100%);
+    border-color: #4a7c59;
+  }
+
+  .btn-song:active {
+    transform: scale(0.98);
+  }
+
+  .btn-song-accent {
+    @apply px-6 py-3 rounded-lg font-song transition-all duration-300;
+    background: linear-gradient(135deg, #c94043 0%, #b54434 100%);
+    color: #f5f0e8;
+  }
+
+  .btn-song-accent:hover {
+    background: linear-gradient(135deg, #d45053 0%, #c94043 100%);
+  }
+
+  /* 宋韵卡片 */
+  .card-song {
+    @apply rounded-xl p-4 transition-all duration-300;
+    background: linear-gradient(180deg, #1f3040 0%, #152535 100%);
+    border: 1px solid rgba(61, 90, 106, 0.3);
+  }
+
+  .card-song:hover {
+    border-color: rgba(74, 124, 89, 0.5);
+    transform: translateY(-2px);
+  }
+
+  /* 风格选择卡片 */
+  .style-card {
+    @apply relative overflow-hidden rounded-xl cursor-pointer transition-all duration-300;
+    aspect-ratio: 1;
+    background: linear-gradient(180deg, #1f3040 0%, #152535 100%);
+    border: 2px solid transparent;
+  }
+
+  .style-card:hover {
+    border-color: #4a7c59;
+    transform: scale(1.02);
+  }
+
+  .style-card.selected {
+    border-color: #c94043;
+    box-shadow: 0 0 20px rgba(201, 64, 67, 0.3);
+  }
+
+  /* 上传区域 */
+  .upload-area {
+    @apply relative rounded-xl p-8 text-center cursor-pointer transition-all duration-300;
+    background: rgba(31, 48, 64, 0.5);
+    border: 2px dashed #3d5a6a;
+  }
+
+  .upload-area:hover {
+    border-color: #4a7c59;
+    background: rgba(31, 48, 64, 0.7);
+  }
+
+  .upload-area.dragging {
+    border-color: #c94043;
+    background: rgba(201, 64, 67, 0.1);
+  }
+
+  /* 进度条 */
+  .progress-bar {
+    @apply relative h-2 rounded-full overflow-hidden;
+    background: #1f3040;
+  }
+
+  .progress-bar-fill {
+    @apply h-full rounded-full transition-all duration-300;
+    background: linear-gradient(90deg, #4a7c59 0%, #d4a84b 100%);
+  }
+
+  /* 水墨晕染背景效果 */
+  .ink-bg {
+    position: relative;
+  }
+
+  .ink-bg::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(ellipse at 30% 20%, rgba(61, 90, 106, 0.2) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(74, 124, 89, 0.1) 0%, transparent 40%);
+    pointer-events: none;
+  }
+}
+
+@layer utilities {
+  /* 文字阴影 */
+  .text-shadow-song {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  /* 渐变文字 */
+  .text-gradient-song {
+    background: linear-gradient(135deg, #f5f0e8 0%, #d4a84b 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}

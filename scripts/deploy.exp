@@ -1,0 +1,108 @@
+#!/usr/bin/expect -f
+
+set timeout 180
+set NAS_IP "100.84.59.9"
+set NAS_PORT "2222"
+set NAS_USER "admin"
+set NAS_PASS "!W0nerfu1life#@"
+set DEPLOY_PATH "/volume1/docker/songyun"
+set LOCAL_PATH "/Users/steveyu/im2im"
+
+puts "🚀 开始部署到 NAS..."
+
+# SSH 命令模板
+proc ssh_cmd {cmd} {
+    global NAS_IP NAS_PORT NAS_USER NAS_PASS
+    spawn ssh -o StrictHostKeyChecking=no -p $NAS_PORT $NAS_USER@$NAS_IP $cmd
+    expect "password:"
+    send "$NAS_PASS\r"
+    expect eof
+}
+
+# SCP 命令模板
+proc scp_file {local remote} {
+    global NAS_IP NAS_PORT NAS_USER NAS_PASS
+    spawn scp -o StrictHostKeyChecking=no -P $NAS_PORT $local $NAS_USER@$NAS_IP:$remote
+    expect "password:"
+    send "$NAS_PASS\r"
+    expect eof
+}
+
+# SCP 目录模板
+proc scp_dir {local remote} {
+    global NAS_IP NAS_PORT NAS_USER NAS_PASS
+    spawn scp -o StrictHostKeyChecking=no -P $NAS_PORT -r $local $NAS_USER@$NAS_IP:$remote
+    expect "password:"
+    send "$NAS_PASS\r"
+    expect eof
+}
+
+# 1. 创建目录
+puts "📦 创建部署目录..."
+ssh_cmd "mkdir -p $DEPLOY_PATH"
+ssh_cmd "mkdir -p $DEPLOY_PATH/nginx"
+ssh_cmd "mkdir -p $DEPLOY_PATH/dist"
+ssh_cmd "mkdir -p $DEPLOY_PATH/backend/dist"
+
+# 2. 上传配置文件
+puts "📤 上传配置文件..."
+scp_file "$LOCAL_PATH/docker-compose-nas.yml" "$DEPLOY_PATH/docker-compose.yml"
+scp_file "$LOCAL_PATH/.env" "$DEPLOY_PATH/.env"
+scp_file "$LOCAL_PATH/nginx/nginx.conf" "$DEPLOY_PATH/nginx/nginx.conf"
+
+# 3. 上传前端
+puts "📤 上传前端..."
+scp_dir "$LOCAL_PATH/dist" "$DEPLOY_PATH/"
+
+# 4. 上传后端
+puts "📤 上传后端..."
+scp_file "$LOCAL_PATH/backend/package.json" "$DEPLOY_PATH/backend/package.json"
+scp_file "$LOCAL_PATH/backend/Dockerfile" "$DEPLOY_PATH/backend/Dockerfile"
+scp_dir "$LOCAL_PATH/backend/dist" "$DEPLOY_PATH/backend/"
+
+puts "✅ 文件上传完成"
+
+# 5. 启动服务
+puts "🚀 启动 Docker 服务..."
+spawn ssh -o StrictHostKeyChecking=no -p $NAS_PORT $NAS_USER@$NAS_IP
+expect "password:"
+send "$NAS_PASS\r"
+expect "$NAS_USER@*"
+
+send "cd $DEPLOY_PATH\r"
+expect "$NAS_USER@*"
+
+send "docker-compose down 2>/dev/null\r"
+expect "$NAS_USER@*"
+
+puts "正在构建 Docker 镜像..."
+send "docker-compose build\r"
+expect {
+    "Successfully" { puts "构建成功" }
+    "$NAS_USER@*" { }
+    timeout { puts "构建超时" }
+}
+
+expect "$NAS_USER@*"
+
+puts "正在启动服务..."
+send "docker-compose up -d\r"
+expect {
+    "done" { puts "启动成功" }
+    "$NAS_USER@*" { }
+    timeout { puts "启动超时" }
+}
+
+expect "$NAS_USER@*"
+
+send "docker-compose ps\r"
+expect "$NAS_USER@*"
+
+send "exit\r"
+expect eof
+
+puts "\n🎉 部署完成!"
+puts "\n📍 访问地址:"
+puts "   H5 前端: http://$NAS_IP:3000"
+puts "   后端 API: http://$NAS_IP:3001/api"
+puts "\n📱 扫码访问: 打印二维码链接 http://$NAS_IP:3000"
