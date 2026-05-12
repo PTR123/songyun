@@ -36,3 +36,12 @@ coverage
 
 # Brainstorm sessions
 .superpowers
+# 部署包
+backend-deploy.tar.gz
+deploy.tar.gz
+*.tar.gz
+
+# 后端构建（NAS 部署）
+backend/dist
+backend/node_modules
+.env*.local
